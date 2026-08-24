@@ -1,8 +1,17 @@
 let trackerData = null;
 
+
+/* ============================================================
+   CONSTANTS
+============================================================ */
+
 const MS_PER_DAY =
     24 * 60 * 60 * 1000;
 
+
+/* ============================================================
+   DATE HELPERS
+============================================================ */
 
 function parseISODate(value) {
 
@@ -43,6 +52,10 @@ function formatDate(value) {
 }
 
 
+/* ============================================================
+   NUMBER OF CALENDAR DAYS
+============================================================ */
+
 function inclusiveDays(
     startISO,
     endISO
@@ -65,6 +78,10 @@ function inclusiveDays(
 }
 
 
+/* ============================================================
+   SUBTRACT DAYS
+============================================================ */
+
 function subtractDays(
     iso,
     count
@@ -81,6 +98,10 @@ function subtractDays(
 }
 
 
+/* ============================================================
+   MAX DATE
+============================================================ */
+
 function maxDate(
     first,
     second
@@ -91,6 +112,10 @@ function maxDate(
         : second;
 }
 
+
+/* ============================================================
+   COUNT REPORTED SUBMISSIONS BETWEEN TWO DATES
+============================================================ */
 
 function sumSubmissions(
     startISO,
@@ -120,6 +145,10 @@ function sumSubmissions(
 }
 
 
+/* ============================================================
+   ADD MONDAY-FRIDAY BUSINESS DAYS
+============================================================ */
+
 function addBusinessDays(
     startISO,
     count
@@ -139,6 +168,11 @@ function addBusinessDays(
         const weekday =
             date.getUTCDay();
 
+        /*
+        0 = Sunday
+        6 = Saturday
+        */
+
         if (
             weekday !== 0
             &&
@@ -153,6 +187,10 @@ function addBusinessDays(
 }
 
 
+/* ============================================================
+   CALCULATE LONG-TERM AND RECENT PROCESSING SPEED
+============================================================ */
+
 function calculateSpeeds() {
 
     const asOf =
@@ -162,9 +200,15 @@ function calculateSpeeds() {
         trackerData.first_submission_date;
 
 
-    // --------------------------------
-    // LONG-TERM SPEED
-    // --------------------------------
+    /* --------------------------------------------------------
+       LONG-TERM SPEED
+
+       Total reported submissions
+       divided by
+       every calendar day from first submission through today.
+
+       Saturdays, Sundays and zero-clearance days count.
+    --------------------------------------------------------- */
 
     const longDays =
         inclusiveDays(
@@ -184,19 +228,24 @@ function calculateSpeeds() {
         longDays;
 
 
-    // --------------------------------
-    // RECENT SPEED
-    // --------------------------------
+    /* --------------------------------------------------------
+       RECENT 14-DAY SPEED
+    --------------------------------------------------------- */
 
-    const windowDays =
+    const configuredWindow =
         trackerData.recent_window_days
         || 14;
 
     const proposedRecentStart =
         subtractDays(
             asOf,
-            windowDays - 1
+            configuredWindow - 1
         );
+
+    /*
+    If submission reporting has existed for fewer
+    than 14 days, start from the first submission date.
+    */
 
     const recentStart =
         maxDate(
@@ -230,6 +279,10 @@ function calculateSpeeds() {
 }
 
 
+/* ============================================================
+   COUNT PEOPLE STILL WAITING BEFORE USER'S JOINING DATE
+============================================================ */
+
 function countWaitingBefore(
     joiningDate
 ) {
@@ -243,7 +296,10 @@ function countWaitingBefore(
         )
     ) {
 
-        if (day < joiningDate) {
+        if (
+            day < joiningDate
+        ) {
+
             total += count;
         }
     }
@@ -252,31 +308,144 @@ function countWaitingBefore(
 }
 
 
+/* ============================================================
+   CALCULATE ETA FROM QUEUE SIZE AND PROCESSING SPEED
+============================================================ */
+
 function etaFromQueue(
     queue,
     speed
 ) {
 
-    if (!speed || speed <= 0) {
+    if (
+        !speed
+        ||
+        speed <= 0
+    ) {
+
         return null;
     }
 
-    const days =
+
+    /*
+    Queue divided by people cleared per day.
+    */
+
+    const estimatedDays =
         Math.ceil(
             queue / speed
         );
 
+
+    /*
+    Convert those estimated days into
+    Monday-Friday business days.
+    */
+
+    const estimatedDate =
+        addBusinessDays(
+            trackerData.as_of_date,
+            estimatedDays
+        );
+
+
     return {
-        businessDays: days,
+
+        businessDays:
+            estimatedDays,
 
         date:
-            addBusinessDays(
-                trackerData.as_of_date,
-                days
-            ),
+            estimatedDate,
     };
 }
 
+
+/* ============================================================
+   RENDER QUEUE BREAKDOWN
+============================================================ */
+
+function renderBreakdown(
+    elementId,
+    peopleBefore,
+    sameDayAhead,
+    buffer,
+    total
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+    element.innerHTML = `
+
+        <div class="breakdown-row">
+
+            <span class="breakdown-number">
+                ${peopleBefore}
+            </span>
+
+            <span class="breakdown-label">
+                still waiting before your joining date
+            </span>
+
+        </div>
+
+
+        <div class="operator">
+            +
+        </div>
+
+
+        <div class="breakdown-row">
+
+            <span class="breakdown-number">
+                ${sameDayAhead}
+            </span>
+
+            <span class="breakdown-label">
+                assumed ahead from your joining date
+            </span>
+
+        </div>
+
+
+        <div class="operator">
+            +
+        </div>
+
+
+        <div class="breakdown-row">
+
+            <span class="breakdown-number">
+                ${buffer}
+            </span>
+
+            <span class="breakdown-label">
+                safety buffer for unreported applicants
+            </span>
+
+        </div>
+
+
+        <div class="breakdown-total">
+
+            <span>
+                Estimated queue ahead
+            </span>
+
+            <strong>
+                ${total}
+            </strong>
+
+        </div>
+    `;
+}
+
+
+/* ============================================================
+   MAIN CALCULATION
+============================================================ */
 
 function calculate() {
 
@@ -293,15 +462,22 @@ function calculate() {
     const joiningDate =
         input.value;
 
+
     error.textContent = "";
+
+
+    /* --------------------------------------------------------
+       VALIDATION
+    --------------------------------------------------------- */
 
     if (!joiningDate) {
 
         error.textContent =
-            "Please select your waiting-list joining date.";
+            "Please select the date when you joined the waiting list.";
 
         return;
     }
+
 
     if (
         joiningDate
@@ -310,21 +486,33 @@ function calculate() {
     ) {
 
         error.textContent =
-            "Joining date cannot be in the future.";
+            "Your joining date cannot be in the future.";
 
         return;
     }
 
 
+    /* --------------------------------------------------------
+       SPEED
+    --------------------------------------------------------- */
+
     const speeds =
         calculateSpeeds();
 
+
+    /* --------------------------------------------------------
+       PEOPLE BEFORE USER
+    --------------------------------------------------------- */
 
     const before =
         countWaitingBefore(
             joiningDate
         );
 
+
+    /* --------------------------------------------------------
+       PEOPLE ON SAME DATE
+    --------------------------------------------------------- */
 
     const sameDay =
         trackerData
@@ -334,46 +522,78 @@ function calculate() {
         || 0;
 
 
+    /* --------------------------------------------------------
+       SAFETY BUFFER
+
+       THIS IS THE +50 BUFFER.
+    --------------------------------------------------------- */
+
     const buffer =
         trackerData.buffer_people
         || 50;
 
 
-    const optimisticAhead =
-        before;
+    /* ========================================================
+       THREE SAME-DAY SCENARIOS
+    ========================================================= */
 
 
-    const middleAhead =
+    /* --------------------------------------------------------
+       OPTIMISTIC
+
+       Nobody from same date assumed ahead.
+    --------------------------------------------------------- */
+
+    const optimisticSameDayAhead =
+        0;
+
+    const optimisticQueue =
         before
         +
+        optimisticSameDayAhead
+        +
+        buffer;
+
+
+    /* --------------------------------------------------------
+       MIDDLE
+
+       Half of same-day unresolved applicants assumed ahead.
+    --------------------------------------------------------- */
+
+    const middleSameDayAhead =
         Math.floor(
             sameDay / 2
         );
 
-
-    const conservativeAhead =
+    const middleQueue =
         before
         +
+        middleSameDayAhead
+        +
+        buffer;
+
+
+    /* --------------------------------------------------------
+       CONSERVATIVE
+
+       Everyone from same date assumed ahead.
+    --------------------------------------------------------- */
+
+    const conservativeSameDayAhead =
         sameDay;
 
-
-    const optimisticQueue =
-        optimisticAhead
-        +
-        buffer;
-
-
-    const middleQueue =
-        middleAhead
-        +
-        buffer;
-
-
     const conservativeQueue =
-        conservativeAhead
+        before
+        +
+        conservativeSameDayAhead
         +
         buffer;
 
+
+    /* ========================================================
+       LONG-TERM ETAs
+    ========================================================= */
 
     const optimisticETA =
         etaFromQueue(
@@ -396,12 +616,22 @@ function calculate() {
         );
 
 
+    /* ========================================================
+       RECENT-SPEED ETA
+
+       Uses middle queue assumption.
+    ========================================================= */
+
     const recentMiddleETA =
         etaFromQueue(
             middleQueue,
             speeds.recentSpeed
         );
 
+
+    /* ========================================================
+       DISPLAY MAIN ESTIMATE
+    ========================================================= */
 
     document.getElementById(
         "primaryDate"
@@ -411,17 +641,25 @@ function calculate() {
         );
 
 
+    /* ========================================================
+       DISPLAY SPEEDS
+    ========================================================= */
+
     document.getElementById(
         "longSpeed"
     ).textContent =
-        `${speeds.longSpeed.toFixed(2)}/day`;
+        `${speeds.longSpeed.toFixed(2)} applicants/day`;
 
 
     document.getElementById(
         "recentSpeed"
     ).textContent =
-        `${speeds.recentSpeed.toFixed(2)}/day`;
+        `${speeds.recentSpeed.toFixed(2)} applicants/day`;
 
+
+    /* ========================================================
+       DISPLAY QUEUE COUNTS
+    ========================================================= */
 
     document.getElementById(
         "peopleBefore"
@@ -435,6 +673,10 @@ function calculate() {
         sameDay;
 
 
+    /* ========================================================
+       OPTIMISTIC RESULT
+    ========================================================= */
+
     document.getElementById(
         "optimisticDate"
     ).textContent =
@@ -446,8 +688,21 @@ function calculate() {
     document.getElementById(
         "optimisticQueue"
     ).textContent =
-        `${optimisticQueue} people used for estimate`;
+        `${optimisticQueue} people estimated ahead`;
 
+
+    renderBreakdown(
+        "optimisticBreakdown",
+        before,
+        optimisticSameDayAhead,
+        buffer,
+        optimisticQueue
+    );
+
+
+    /* ========================================================
+       MIDDLE RESULT
+    ========================================================= */
 
     document.getElementById(
         "middleDate"
@@ -460,8 +715,21 @@ function calculate() {
     document.getElementById(
         "middleQueue"
     ).textContent =
-        `${middleQueue} people used for estimate`;
+        `${middleQueue} people estimated ahead`;
 
+
+    renderBreakdown(
+        "middleBreakdown",
+        before,
+        middleSameDayAhead,
+        buffer,
+        middleQueue
+    );
+
+
+    /* ========================================================
+       CONSERVATIVE RESULT
+    ========================================================= */
 
     document.getElementById(
         "conservativeDate"
@@ -474,18 +742,37 @@ function calculate() {
     document.getElementById(
         "conservativeQueue"
     ).textContent =
-        `${conservativeQueue} people used for estimate`;
+        `${conservativeQueue} people estimated ahead`;
 
+
+    renderBreakdown(
+        "conservativeBreakdown",
+        before,
+        conservativeSameDayAhead,
+        buffer,
+        conservativeQueue
+    );
+
+
+    /* ========================================================
+       RECENT SPEED RESULT
+    ========================================================= */
 
     document.getElementById(
         "recentExpectedDate"
     ).textContent =
         recentMiddleETA
-            ? formatDate(
+            ?
+            formatDate(
                 recentMiddleETA.date
             )
-            : "No recent clearances";
+            :
+            "No recent processing activity";
 
+
+    /* ========================================================
+       TRACKER INFORMATION
+    ========================================================= */
 
     document.getElementById(
         "queueReached"
@@ -505,7 +792,7 @@ function calculate() {
     document.getElementById(
         "bufferPeople"
     ).textContent =
-        `+${buffer}`;
+        `+${buffer} applicants`;
 
 
     document.getElementById(
@@ -515,6 +802,10 @@ function calculate() {
             trackerData.as_of_date
         );
 
+
+    /* ========================================================
+       SHOW RESULTS
+    ========================================================= */
 
     document.getElementById(
         "results"
@@ -532,6 +823,10 @@ function calculate() {
 }
 
 
+/* ============================================================
+   LOAD TRACKER JSON
+============================================================ */
+
 async function loadTrackerData() {
 
     const status =
@@ -540,6 +835,11 @@ async function loadTrackerData() {
         );
 
     try {
+
+        /*
+        Add timestamp to URL so browser does not
+        accidentally use an old cached JSON file.
+        */
 
         const response =
             await fetch(
@@ -559,22 +859,31 @@ async function loadTrackerData() {
             await response.json();
 
 
+        /* ----------------------------------------------------
+           PREVENT FUTURE DATES
+        ----------------------------------------------------- */
+
         const input =
             document.getElementById(
                 "joiningDate"
             );
 
-
         input.max =
             trackerData.as_of_date;
 
 
+        /* ----------------------------------------------------
+           STATUS
+        ----------------------------------------------------- */
+
         status.textContent =
-            `Live community statistics loaded. `
+            `Community data loaded successfully. `
             +
-            `Data updated `
+            `Latest update: `
             +
-            `${formatDate(trackerData.as_of_date)}.`;
+            `${formatDate(trackerData.as_of_date)}. `
+            +
+            `${trackerData.total_applicants} applicant records currently available.`;
 
 
         document.getElementById(
@@ -588,13 +897,17 @@ async function loadTrackerData() {
         console.error(error);
 
         status.textContent =
-            "Could not load tracker data. "
+            "The latest VisaTracker data could not be loaded. "
             +
             "Please try again later.";
 
     }
 }
 
+
+/* ============================================================
+   INITIALISE PAGE
+============================================================ */
 
 document.getElementById(
     "calculateButton"
@@ -606,6 +919,26 @@ document.getElementById(
 ).addEventListener(
     "click",
     calculate
+);
+
+
+/*
+Allow Enter key to calculate.
+*/
+
+document.getElementById(
+    "joiningDate"
+).addEventListener(
+    "keydown",
+    function (event) {
+
+        if (
+            event.key === "Enter"
+        ) {
+
+            calculate();
+        }
+    }
 );
 
 
