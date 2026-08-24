@@ -1,348 +1,564 @@
-<section
-    id="results"
-    class="results hidden"
->
+<!DOCTYPE html>
+<html lang="en">
 
-    <div class="section-heading">
+<head>
+    <meta charset="UTF-8">
 
-        <p class="eyebrow">
-            Your estimated submission date
-        </p>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-        <h2 id="primaryDate">
-            —
-        </h2>
+    <title>
+        Germany Visa ETA Calculator — Islamabad
+    </title>
 
-        <p>
-            This is the middle estimate using the
-            long-term processing speed and the
-            50-person community-data safety buffer.
-        </p>
+    <meta
+        name="description"
+        content="Unofficial community estimate for Germany student visa waiting-list applicants in Islamabad."
+    >
 
-    </div>
+    <link
+        rel="stylesheet"
+        href="./style.css"
+    >
+</head>
 
+<body>
 
-    <div class="stats-grid">
+    <main class="container">
 
-        <article class="stat-card">
+        <!-- ==================================================
+             HEADER
+        =================================================== -->
 
-            <span>
-                Long-term processing speed
-            </span>
+        <header class="hero">
 
-            <strong id="longSpeed">
-                —
-            </strong>
-
-            <small>
-                Average reported clearances per
-                calendar day from the first recorded
-                submission through today. Weekends and
-                zero-clearance days are included.
-            </small>
-
-        </article>
-
-
-        <article class="stat-card">
-
-            <span>
-                Recent processing speed
-            </span>
-
-            <strong id="recentSpeed">
-                —
-            </strong>
-
-            <small>
-                Average reported clearances during the
-                most recent 14 calendar days. This reacts
-                more quickly to recent changes in speed.
-            </small>
-
-        </article>
-
-
-        <article class="stat-card">
-
-            <span>
-                Still waiting before your joining date
-            </span>
-
-            <strong id="peopleBefore">
-                —
-            </strong>
-
-            <small>
-                These are self-reported applicants who
-                joined before you and still have no
-                submission date recorded.
-            </small>
-
-        </article>
-
-
-        <article class="stat-card">
-
-            <span>
-                Still waiting on your joining date
-            </span>
-
-            <strong id="sameDay">
-                —
-            </strong>
-
-            <small>
-                We cannot know exactly where you are
-                positioned among people who joined on
-                the same day.
-            </small>
-
-        </article>
-
-    </div>
-
-
-    <div class="how-it-works">
-
-        <h3>
-            How your estimate is calculated
-        </h3>
-
-        <p>
-            The calculator first counts applicants who
-            joined before you and are still waiting.
-            Because this is a self-reported tracker and
-            many real applicants may never enter their
-            information, an additional
-            <strong>50-person safety buffer</strong>
-            is added.
-        </p>
-
-        <p>
-            Your estimated queue is then divided by the
-            observed processing speed to estimate how
-            many business days remain. Saturdays and
-            Sundays are excluded only when converting
-            the remaining waiting time into the final
-            expected submission date.
-        </p>
-
-    </div>
-
-
-    <h3>
-        Your position could vary within your joining day
-    </h3>
-
-    <p class="explanation">
-        We know how many unresolved applicants joined
-        on your date, but we do not know whether you
-        were near the beginning, middle, or end of that
-        day's queue. Therefore, the calculator shows
-        three possible scenarios.
-    </p>
-
-
-    <div class="scenario-grid">
-
-        <article class="scenario">
-
-            <span class="scenario-label">
-                Optimistic
-            </span>
-
-            <h4 id="optimisticDate">
-                —
-            </h4>
-
-            <p
-                id="optimisticQueue"
-                class="queue-total"
-            >
-                —
-            </p>
-
-            <div
-                id="optimisticBreakdown"
-                class="queue-breakdown"
-            >
+            <div class="badge">
+                Unofficial Community Tool
             </div>
 
-            <small>
-                Assumes none of the unresolved applicants
-                from your joining date are ahead of you.
-            </small>
+            <h1>
+                Germany Visa ETA Calculator
+            </h1>
 
-        </article>
-
-
-        <article class="scenario featured">
-
-            <span class="scenario-label">
-                Middle Estimate
-            </span>
-
-            <h4 id="middleDate">
-                —
-            </h4>
-
-            <p
-                id="middleQueue"
-                class="queue-total"
-            >
-                —
+            <p class="subtitle">
+                Estimate when you may receive your Germany visa
+                submission invitation based on community-reported
+                Islamabad waiting-list data.
             </p>
 
-            <div
-                id="middleBreakdown"
-                class="queue-breakdown"
+        </header>
+
+
+        <!-- ==================================================
+             DATE INPUT
+        =================================================== -->
+
+        <section class="card calculator">
+
+            <label for="joiningDate">
+                When did you join the waiting list?
+            </label>
+
+            <input
+                type="date"
+                id="joiningDate"
             >
-            </div>
 
-            <small>
-                Assumes roughly half of the unresolved
-                applicants from your joining date are
-                ahead of you. This is used for the main
-                estimate shown above.
-            </small>
-
-        </article>
-
-
-        <article class="scenario">
-
-            <span class="scenario-label">
-                Conservative
-            </span>
-
-            <h4 id="conservativeDate">
-                —
-            </h4>
+            <button id="calculateButton">
+                Calculate my estimate
+            </button>
 
             <p
-                id="conservativeQueue"
-                class="queue-total"
-            >
-                —
-            </p>
+                id="errorMessage"
+                class="error"
+            ></p>
 
-            <div
-                id="conservativeBreakdown"
-                class="queue-breakdown"
-            >
+        </section>
+
+
+        <!-- ==================================================
+             RESULTS
+        =================================================== -->
+
+        <section
+            id="results"
+            class="results hidden"
+        >
+
+            <!-- MAIN RESULT -->
+
+            <div class="section-heading">
+
+                <p class="eyebrow">
+                    Your estimated submission date
+                </p>
+
+                <h2 id="primaryDate">
+                    —
+                </h2>
+
+                <p>
+                    This is the middle estimate using the
+                    long-term processing speed and the
+                    50-person community-data safety buffer.
+                </p>
+
             </div>
 
-            <small>
-                Assumes every unresolved applicant from
-                your joining date is ahead of you.
-            </small>
 
-        </article>
+            <!-- ==================================================
+                 MAIN STATISTICS
+            =================================================== -->
 
-    </div>
+            <div class="stats-grid">
 
+                <article class="stat-card">
 
-    <div class="recent-box">
+                    <span class="stat-title">
+                        Long-term processing speed
+                    </span>
 
-        <div>
+                    <strong id="longSpeed">
+                        —
+                    </strong>
 
-            <span>
-                If the recent 14-day processing speed continues
-            </span>
+                    <small>
+                        Average number of reported applicants
+                        receiving submission per calendar day
+                        from the first recorded submission
+                        through today.
+                        Saturdays, Sundays and days with
+                        zero reported submissions are included.
+                    </small>
 
-            <strong id="recentExpectedDate">
-                —
-            </strong>
-
-        </div>
-
-        <p>
-            This estimate uses only the latest processing
-            activity. It may change more sharply from day
-            to day, but can indicate whether the queue has
-            recently accelerated or slowed down.
-        </p>
-
-    </div>
+                </article>
 
 
-    <div class="tracker-info">
+                <article class="stat-card">
 
-        <div>
+                    <span class="stat-title">
+                        Recent processing speed
+                    </span>
 
-            <span>
-                Furthest waiting-list date with a reported submission
-            </span>
+                    <strong id="recentSpeed">
+                        —
+                    </strong>
 
-            <strong id="queueReached">
-                —
-            </strong>
+                    <small>
+                        Average reported processing speed during
+                        the most recent 14 calendar days.
+                        This number reacts faster if processing
+                        recently speeds up or slows down.
+                    </small>
 
-            <small>
-                At least one applicant who joined on this
-                date has reported receiving submission.
-                It does not mean everyone before this date
-                has already been cleared.
-            </small>
-
-        </div>
+                </article>
 
 
-        <div>
+                <article class="stat-card">
 
-            <span>
-                Total people entered in the community tracker
-            </span>
+                    <span class="stat-title">
+                        Still waiting before your joining date
+                    </span>
 
-            <strong id="totalApplicants">
-                —
-            </strong>
+                    <strong id="peopleBefore">
+                        —
+                    </strong>
 
-            <small>
-                Total number of self-reported applicant
-                records currently available in the source data.
-            </small>
+                    <small>
+                        These are applicants who joined the
+                        waiting list before you and still have
+                        no submission date recorded in the
+                        community tracker.
+                    </small>
 
-        </div>
-
-
-        <div>
-
-            <span>
-                Safety buffer for unreported applicants
-            </span>
-
-            <strong id="bufferPeople">
-                —
-            </strong>
-
-            <small>
-                Added to every estimate because the real
-                embassy queue includes people who may never
-                enter themselves into the community tracker.
-            </small>
-
-        </div>
+                </article>
 
 
-        <div>
+                <article class="stat-card">
 
-            <span>
-                Tracker data last refreshed
-            </span>
+                    <span class="stat-title">
+                        Still waiting on your joining date
+                    </span>
 
-            <strong id="lastUpdated">
-                —
-            </strong>
+                    <strong id="sameDay">
+                        —
+                    </strong>
 
-            <small>
-                The calculator uses the most recently
-                downloaded community data.
-            </small>
+                    <small>
+                        These applicants joined on exactly the
+                        same date as you. Since we do not know
+                        your exact position within that day,
+                        three possible scenarios are shown below.
+                    </small>
 
-        </div>
+                </article>
 
-    </div>
+            </div>
 
-</section>
+
+            <!-- ==================================================
+                 HOW CALCULATION WORKS
+            =================================================== -->
+
+            <div class="how-it-works">
+
+                <h3>
+                    How is your estimated date calculated?
+                </h3>
+
+                <p>
+                    First, the calculator counts all applicants
+                    who joined before your date and still have
+                    a blank submission field.
+                </p>
+
+                <p>
+                    Because this tracker is self-reported,
+                    there are probably real applicants in the
+                    embassy queue who never entered their data.
+                    To account for this uncertainty, the
+                    calculator automatically adds a
+                    <strong>50-person safety buffer</strong>
+                    to your estimated queue.
+                </p>
+
+                <p>
+                    The estimated number of people ahead of you
+                    is then divided by the observed processing
+                    speed to estimate how many working days
+                    remain.
+                </p>
+
+                <div class="formula-box">
+
+                    <strong>
+                        Estimated waiting time
+                    </strong>
+
+                    <span>
+                        =
+                    </span>
+
+                    <div>
+                        People estimated ahead of you
+                        <hr>
+                        Processing speed per day
+                    </div>
+
+                </div>
+
+                <p>
+                    Saturdays and Sundays are included when
+                    calculating processing speed, including
+                    weekends where zero submissions are reported.
+                    However, weekends are skipped when converting
+                    the estimated waiting time into the final
+                    expected submission date.
+                </p>
+
+            </div>
+
+
+            <!-- ==================================================
+                 SAME DAY POSITION
+            =================================================== -->
+
+            <h3 class="scenario-heading">
+                Where are you positioned among people who joined
+                on the same day?
+            </h3>
+
+            <p class="explanation">
+                The tracker tells us the joining date but not
+                your exact order within that date. Therefore,
+                we show three scenarios instead of pretending
+                we know your exact same-day position.
+            </p>
+
+
+            <div class="scenario-grid">
+
+                <!-- OPTIMISTIC -->
+
+                <article class="scenario">
+
+                    <span class="scenario-label">
+                        Optimistic
+                    </span>
+
+                    <h4 id="optimisticDate">
+                        —
+                    </h4>
+
+                    <p
+                        id="optimisticQueue"
+                        class="queue-total"
+                    >
+                        —
+                    </p>
+
+                    <div
+                        id="optimisticBreakdown"
+                        class="queue-breakdown"
+                    ></div>
+
+                    <small class="scenario-description">
+                        Assumes none of the unresolved applicants
+                        from your joining date are ahead of you.
+                    </small>
+
+                </article>
+
+
+                <!-- MIDDLE -->
+
+                <article class="scenario featured">
+
+                    <div class="recommended-badge">
+                        Main Estimate
+                    </div>
+
+                    <span class="scenario-label">
+                        Middle Estimate
+                    </span>
+
+                    <h4 id="middleDate">
+                        —
+                    </h4>
+
+                    <p
+                        id="middleQueue"
+                        class="queue-total"
+                    >
+                        —
+                    </p>
+
+                    <div
+                        id="middleBreakdown"
+                        class="queue-breakdown"
+                    ></div>
+
+                    <small class="scenario-description">
+                        Assumes approximately half of the
+                        unresolved applicants from your joining
+                        date are ahead of you.
+                        This is the date shown as the main
+                        estimate above.
+                    </small>
+
+                </article>
+
+
+                <!-- CONSERVATIVE -->
+
+                <article class="scenario">
+
+                    <span class="scenario-label">
+                        Conservative
+                    </span>
+
+                    <h4 id="conservativeDate">
+                        —
+                    </h4>
+
+                    <p
+                        id="conservativeQueue"
+                        class="queue-total"
+                    >
+                        —
+                    </p>
+
+                    <div
+                        id="conservativeBreakdown"
+                        class="queue-breakdown"
+                    ></div>
+
+                    <small class="scenario-description">
+                        Assumes every unresolved applicant from
+                        your joining date is ahead of you.
+                    </small>
+
+                </article>
+
+            </div>
+
+
+            <!-- ==================================================
+                 RECENT SPEED ESTIMATE
+            =================================================== -->
+
+            <div class="recent-box">
+
+                <div>
+
+                    <span>
+                        If the recent 14-day processing speed continues
+                    </span>
+
+                    <strong id="recentExpectedDate">
+                        —
+                    </strong>
+
+                </div>
+
+                <p>
+                    This estimate uses only recent processing
+                    activity instead of the full historical
+                    average.
+                </p>
+
+                <p>
+                    It can change more sharply from day to day,
+                    but it helps show whether visa processing
+                    has recently accelerated or slowed down.
+                </p>
+
+            </div>
+
+
+            <!-- ==================================================
+                 TRACKER INFORMATION
+            =================================================== -->
+
+            <h3 class="details-heading">
+                Current tracker information
+            </h3>
+
+
+            <div class="tracker-info">
+
+                <div>
+
+                    <span>
+                        Furthest waiting-list date with a reported submission
+                    </span>
+
+                    <strong id="queueReached">
+                        —
+                    </strong>
+
+                    <small>
+                        At least one applicant who joined on this
+                        date has reported receiving submission.
+                        This does not mean that every applicant
+                        before this date has already been cleared.
+                    </small>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Total people entered in the community tracker
+                    </span>
+
+                    <strong id="totalApplicants">
+                        —
+                    </strong>
+
+                    <small>
+                        Total number of applicant records currently
+                        entered into the self-reported tracker.
+                    </small>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Safety buffer for unreported applicants
+                    </span>
+
+                    <strong id="bufferPeople">
+                        —
+                    </strong>
+
+                    <small>
+                        Added to every estimate because not every
+                        real applicant in the embassy queue will
+                        have entered their information into the
+                        community tracker.
+                    </small>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Tracker data last refreshed
+                    </span>
+
+                    <strong id="lastUpdated">
+                        —
+                    </strong>
+
+                    <small>
+                        This shows when the calculator last
+                        downloaded fresh community tracker data.
+                    </small>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             DISCLAIMER
+        =================================================== -->
+
+        <section class="card disclaimer">
+
+            <h3>
+                Important disclaimer
+            </h3>
+
+            <p>
+                This is an unofficial community forecasting tool.
+                It is not affiliated with the German Embassy,
+                the German Government, the Federal Foreign Office,
+                or any official visa service provider.
+            </p>
+
+            <p>
+                The underlying source is self-reported community
+                data. Entries may be missing, delayed, incorrect,
+                edited later, or incomplete.
+            </p>
+
+            <p>
+                The calculated date is only an estimate based on
+                the currently observed queue and processing speed.
+                It is not an appointment guarantee and should not
+                be treated as an official visa timeline.
+            </p>
+
+        </section>
+
+
+        <!-- ==================================================
+             FOOTER
+        =================================================== -->
+
+        <footer>
+
+            <p id="dataStatus">
+                Loading community data…
+            </p>
+
+        </footer>
+
+    </main>
+
+
+    <script src="./app.js"></script>
+
+</body>
+
+</html>
