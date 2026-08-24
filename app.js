@@ -53,7 +53,7 @@ function formatDate(value) {
 
 
 /* ============================================================
-   NUMBER OF CALENDAR DAYS
+   CALENDAR DAY HELPERS
 ============================================================ */
 
 function inclusiveDays(
@@ -78,10 +78,6 @@ function inclusiveDays(
 }
 
 
-/* ============================================================
-   SUBTRACT DAYS
-============================================================ */
-
 function subtractDays(
     iso,
     count
@@ -98,10 +94,6 @@ function subtractDays(
 }
 
 
-/* ============================================================
-   MAX DATE
-============================================================ */
-
 function maxDate(
     first,
     second
@@ -114,7 +106,7 @@ function maxDate(
 
 
 /* ============================================================
-   COUNT REPORTED SUBMISSIONS BETWEEN TWO DATES
+   COUNT SUBMISSIONS BETWEEN DATES
 ============================================================ */
 
 function sumSubmissions(
@@ -146,7 +138,7 @@ function sumSubmissions(
 
 
 /* ============================================================
-   ADD MONDAY-FRIDAY BUSINESS DAYS
+   ADD BUSINESS DAYS
 ============================================================ */
 
 function addBusinessDays(
@@ -169,8 +161,8 @@ function addBusinessDays(
             date.getUTCDay();
 
         /*
-        0 = Sunday
-        6 = Saturday
+        Sunday = 0
+        Saturday = 6
         */
 
         if (
@@ -188,7 +180,7 @@ function addBusinessDays(
 
 
 /* ============================================================
-   CALCULATE LONG-TERM AND RECENT PROCESSING SPEED
+   CALCULATE PROCESSING SPEEDS
 ============================================================ */
 
 function calculateSpeeds() {
@@ -202,12 +194,6 @@ function calculateSpeeds() {
 
     /* --------------------------------------------------------
        LONG-TERM SPEED
-
-       Total reported submissions
-       divided by
-       every calendar day from first submission through today.
-
-       Saturdays, Sundays and zero-clearance days count.
     --------------------------------------------------------- */
 
     const longDays =
@@ -229,7 +215,7 @@ function calculateSpeeds() {
 
 
     /* --------------------------------------------------------
-       RECENT 14-DAY SPEED
+       RECENT SPEED
     --------------------------------------------------------- */
 
     const configuredWindow =
@@ -241,11 +227,6 @@ function calculateSpeeds() {
             asOf,
             configuredWindow - 1
         );
-
-    /*
-    If submission reporting has existed for fewer
-    than 14 days, start from the first submission date.
-    */
 
     const recentStart =
         maxDate(
@@ -280,7 +261,7 @@ function calculateSpeeds() {
 
 
 /* ============================================================
-   COUNT PEOPLE STILL WAITING BEFORE USER'S JOINING DATE
+   COUNT WAITING APPLICANTS BEFORE USER
 ============================================================ */
 
 function countWaitingBefore(
@@ -309,7 +290,57 @@ function countWaitingBefore(
 
 
 /* ============================================================
-   CALCULATE ETA FROM QUEUE SIZE AND PROCESSING SPEED
+   READ USER'S BUFFER
+============================================================ */
+
+function getSelectedBuffer() {
+
+    const input =
+        document.getElementById(
+            "bufferInput"
+        );
+
+    let buffer =
+        parseInt(
+            input.value,
+            10
+        );
+
+
+    if (
+        Number.isNaN(buffer)
+    ) {
+
+        buffer = 50;
+    }
+
+
+    if (
+        buffer < 0
+    ) {
+
+        buffer = 0;
+    }
+
+
+    if (
+        buffer > 500
+    ) {
+
+        buffer = 500;
+    }
+
+
+    input.value =
+        buffer;
+
+
+    return buffer;
+}
+
+
+/* ============================================================
+   ETA FROM QUEUE SIZE
 ============================================================ */
 
 function etaFromQueue(
@@ -327,20 +358,11 @@ function etaFromQueue(
     }
 
 
-    /*
-    Queue divided by people cleared per day.
-    */
-
     const estimatedDays =
         Math.ceil(
             queue / speed
         );
 
-
-    /*
-    Convert those estimated days into
-    Monday-Friday business days.
-    */
 
     const estimatedDate =
         addBusinessDays(
@@ -361,7 +383,7 @@ function etaFromQueue(
 
 
 /* ============================================================
-   RENDER QUEUE BREAKDOWN
+   RENDER BREAKDOWN
 ============================================================ */
 
 function renderBreakdown(
@@ -376,6 +398,7 @@ function renderBreakdown(
         document.getElementById(
             elementId
         );
+
 
     element.innerHTML = `
 
@@ -422,7 +445,7 @@ function renderBreakdown(
             </span>
 
             <span class="breakdown-label">
-                safety buffer for unreported applicants
+                your selected safety buffer
             </span>
 
         </div>
@@ -501,7 +524,7 @@ function calculate() {
 
 
     /* --------------------------------------------------------
-       PEOPLE BEFORE USER
+       PEOPLE WAITING BEFORE USER
     --------------------------------------------------------- */
 
     const before =
@@ -511,7 +534,7 @@ function calculate() {
 
 
     /* --------------------------------------------------------
-       PEOPLE ON SAME DATE
+       SAME-DAY WAITING APPLICANTS
     --------------------------------------------------------- */
 
     const sameDay =
@@ -523,26 +546,16 @@ function calculate() {
 
 
     /* --------------------------------------------------------
-       SAFETY BUFFER
-
-       THIS IS THE +50 BUFFER.
+       USER-SELECTED BUFFER
     --------------------------------------------------------- */
 
     const buffer =
-        trackerData.buffer_people
-        || 50;
+        getSelectedBuffer();
 
 
     /* ========================================================
-       THREE SAME-DAY SCENARIOS
-    ========================================================= */
-
-
-    /* --------------------------------------------------------
        OPTIMISTIC
-
-       Nobody from same date assumed ahead.
-    --------------------------------------------------------- */
+    ========================================================= */
 
     const optimisticSameDayAhead =
         0;
@@ -555,11 +568,9 @@ function calculate() {
         buffer;
 
 
-    /* --------------------------------------------------------
+    /* ========================================================
        MIDDLE
-
-       Half of same-day unresolved applicants assumed ahead.
-    --------------------------------------------------------- */
+    ========================================================= */
 
     const middleSameDayAhead =
         Math.floor(
@@ -574,11 +585,9 @@ function calculate() {
         buffer;
 
 
-    /* --------------------------------------------------------
+    /* ========================================================
        CONSERVATIVE
-
-       Everyone from same date assumed ahead.
-    --------------------------------------------------------- */
+    ========================================================= */
 
     const conservativeSameDayAhead =
         sameDay;
@@ -592,7 +601,7 @@ function calculate() {
 
 
     /* ========================================================
-       LONG-TERM ETAs
+       LONG-TERM ETAS
     ========================================================= */
 
     const optimisticETA =
@@ -617,9 +626,7 @@ function calculate() {
 
 
     /* ========================================================
-       RECENT-SPEED ETA
-
-       Uses middle queue assumption.
+       RECENT ETA
     ========================================================= */
 
     const recentMiddleETA =
@@ -630,7 +637,7 @@ function calculate() {
 
 
     /* ========================================================
-       DISPLAY MAIN ESTIMATE
+       MAIN RESULT
     ========================================================= */
 
     document.getElementById(
@@ -642,7 +649,7 @@ function calculate() {
 
 
     /* ========================================================
-       DISPLAY SPEEDS
+       SPEEDS
     ========================================================= */
 
     document.getElementById(
@@ -658,7 +665,7 @@ function calculate() {
 
 
     /* ========================================================
-       DISPLAY QUEUE COUNTS
+       QUEUE COUNTS
     ========================================================= */
 
     document.getElementById(
@@ -674,7 +681,7 @@ function calculate() {
 
 
     /* ========================================================
-       OPTIMISTIC RESULT
+       OPTIMISTIC DISPLAY
     ========================================================= */
 
     document.getElementById(
@@ -701,7 +708,7 @@ function calculate() {
 
 
     /* ========================================================
-       MIDDLE RESULT
+       MIDDLE DISPLAY
     ========================================================= */
 
     document.getElementById(
@@ -728,7 +735,7 @@ function calculate() {
 
 
     /* ========================================================
-       CONSERVATIVE RESULT
+       CONSERVATIVE DISPLAY
     ========================================================= */
 
     document.getElementById(
@@ -755,7 +762,7 @@ function calculate() {
 
 
     /* ========================================================
-       RECENT SPEED RESULT
+       RECENT ETA DISPLAY
     ========================================================= */
 
     document.getElementById(
@@ -824,7 +831,56 @@ function calculate() {
 
 
 /* ============================================================
-   LOAD TRACKER JSON
+   BUFFER PRESET BUTTONS
+============================================================ */
+
+function setupBufferPresets() {
+
+    const buttons =
+        document.querySelectorAll(
+            ".buffer-preset"
+        );
+
+
+    buttons.forEach(
+        function (button) {
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    const value =
+                        button.dataset.buffer;
+
+                    document.getElementById(
+                        "bufferInput"
+                    ).value =
+                        value;
+
+
+                    buttons.forEach(
+                        function (otherButton) {
+
+                            otherButton.classList.remove(
+                                "selected"
+                            );
+                        }
+                    );
+
+
+                    button.classList.add(
+                        "selected"
+                    );
+
+                }
+            );
+        }
+    );
+}
+
+
+/* ============================================================
+   LOAD TRACKER DATA
 ============================================================ */
 
 async function loadTrackerData() {
@@ -834,12 +890,8 @@ async function loadTrackerData() {
             "dataStatus"
         );
 
-    try {
 
-        /*
-        Add timestamp to URL so browser does not
-        accidentally use an old cached JSON file.
-        */
+    try {
 
         const response =
             await fetch(
@@ -860,16 +912,31 @@ async function loadTrackerData() {
 
 
         /* ----------------------------------------------------
-           PREVENT FUTURE DATES
+           MAX DATE
         ----------------------------------------------------- */
 
-        const input =
+        const dateInput =
             document.getElementById(
                 "joiningDate"
             );
 
-        input.max =
+        dateInput.max =
             trackerData.as_of_date;
+
+
+        /* ----------------------------------------------------
+           DEFAULT BUFFER
+        ----------------------------------------------------- */
+
+        const recommendedBuffer =
+            trackerData.buffer_people
+            || 50;
+
+
+        document.getElementById(
+            "bufferInput"
+        ).value =
+            recommendedBuffer;
 
 
         /* ----------------------------------------------------
@@ -888,13 +955,17 @@ async function loadTrackerData() {
 
         document.getElementById(
             "calculateButton"
-        ).disabled = false;
+        ).disabled =
+            false;
 
     }
 
     catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         status.textContent =
             "The latest VisaTracker data could not be loaded. "
@@ -906,12 +977,13 @@ async function loadTrackerData() {
 
 
 /* ============================================================
-   INITIALISE PAGE
+   INITIALISE
 ============================================================ */
 
 document.getElementById(
     "calculateButton"
-).disabled = true;
+).disabled =
+    true;
 
 
 document.getElementById(
@@ -922,9 +994,7 @@ document.getElementById(
 );
 
 
-/*
-Allow Enter key to calculate.
-*/
+/* Press Enter from date field */
 
 document.getElementById(
     "joiningDate"
@@ -941,5 +1011,25 @@ document.getElementById(
     }
 );
 
+
+/* Press Enter from buffer field */
+
+document.getElementById(
+    "bufferInput"
+).addEventListener(
+    "keydown",
+    function (event) {
+
+        if (
+            event.key === "Enter"
+        ) {
+
+            calculate();
+        }
+    }
+);
+
+
+setupBufferPresets();
 
 loadTrackerData();
