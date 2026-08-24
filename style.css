@@ -53,7 +53,8 @@ body {
     color:
         var(--text);
 
-    line-height: 1.5;
+    line-height:
+        1.5;
 }
 
 
@@ -179,10 +180,17 @@ h1 {
 .calculator {
 
     max-width:
-        620px;
+        650px;
 
     margin:
         0 auto 34px;
+}
+
+
+.input-group {
+
+    margin-bottom:
+        20px;
 }
 
 
@@ -217,15 +225,196 @@ input[type="date"] {
         1px solid
         var(--border);
 
-    margin-bottom:
-        12px;
-
     background:
         white;
 }
 
 
-button {
+/* ============================================================
+   BUFFER CONTROL
+============================================================ */
+
+.buffer-control {
+
+    margin:
+        18px 0 22px;
+
+    padding:
+        18px;
+
+    background:
+        #f8fafc;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius:
+        12px;
+}
+
+
+.buffer-input-row {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        10px;
+
+    margin-bottom:
+        8px;
+}
+
+
+.buffer-input-row input {
+
+    width:
+        125px;
+
+    padding:
+        12px 14px;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius:
+        9px;
+
+    background:
+        white;
+
+    font:
+        inherit;
+
+    font-size:
+        18px;
+
+    font-weight:
+        800;
+}
+
+
+.buffer-input-row span {
+
+    color:
+        var(--muted);
+
+    font-weight:
+        600;
+}
+
+
+.buffer-control > small {
+
+    display:
+        block;
+
+    color:
+        var(--muted);
+
+    line-height:
+        1.55;
+
+    margin-top:
+        8px;
+}
+
+
+/* ============================================================
+   BUFFER PRESETS
+============================================================ */
+
+.buffer-examples {
+
+    display:
+        flex;
+
+    flex-wrap:
+        wrap;
+
+    gap:
+        7px;
+
+    margin-top:
+        14px;
+}
+
+
+.buffer-preset {
+
+    width:
+        auto;
+
+    border:
+        1px solid
+        var(--border);
+
+    background:
+        white;
+
+    color:
+        var(--text);
+
+    border-radius:
+        999px;
+
+    padding:
+        7px 12px;
+
+    font-size:
+        12px;
+
+    font-weight:
+        700;
+
+    cursor:
+        pointer;
+}
+
+
+.buffer-preset:hover {
+
+    background:
+        var(--primary-soft);
+
+    opacity:
+        1;
+}
+
+
+.buffer-preset.recommended {
+
+    border-color:
+        var(--primary);
+
+    color:
+        var(--primary);
+}
+
+
+.buffer-preset.selected {
+
+    background:
+        var(--primary);
+
+    border-color:
+        var(--primary);
+
+    color:
+        white;
+}
+
+
+/* ============================================================
+   CALCULATE BUTTON
+============================================================ */
+
+.calculate-button {
 
     width:
         100%;
@@ -259,14 +448,14 @@ button {
 }
 
 
-button:hover {
+.calculate-button:hover {
 
     opacity:
         0.92;
 }
 
 
-button:disabled {
+.calculate-button:disabled {
 
     opacity:
         0.5;
@@ -491,13 +680,6 @@ button:disabled {
 }
 
 
-.how-it-works p:last-child {
-
-    margin-bottom:
-        0;
-}
-
-
 .formula-box {
 
     display:
@@ -536,7 +718,14 @@ button:disabled {
 }
 
 
-.formula-box > span {
+.formula-label {
+
+    font-weight:
+        800;
+}
+
+
+.formula-equals {
 
     font-size:
         24px;
@@ -546,7 +735,14 @@ button:disabled {
 }
 
 
-.formula-box hr {
+.fraction {
+
+    min-width:
+        210px;
+}
+
+
+.fraction hr {
 
     border:
         0;
@@ -556,12 +752,12 @@ button:disabled {
         var(--text);
 
     margin:
-        5px 0;
+        6px 0;
 }
 
 
 /* ============================================================
-   SAME-DAY SCENARIOS
+   SCENARIOS
 ============================================================ */
 
 .scenario-heading {
@@ -1139,10 +1335,20 @@ footer {
     }
 
 
-    .formula-box > span {
+    .buffer-examples {
 
-        transform:
-            rotate(90deg);
+        gap:
+            6px;
+    }
+
+
+    .buffer-preset {
+
+        font-size:
+            11px;
+
+        padding:
+            6px 10px;
     }
 
 }
