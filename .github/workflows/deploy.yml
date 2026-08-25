@@ -8,10 +8,16 @@ on:
 
   workflow_dispatch:
 
+  schedule:
+    - cron: "0 9,21 * * *"
+      timezone: "Asia/Karachi"
+
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 
 concurrency:
   group: "pages"
