@@ -39,6 +39,24 @@ def clean(text: str) -> str:
     ).strip()
 
 
+def canonical_header(text: str) -> str:
+    """Accept original website headings and the new abbreviated layout."""
+    normalized = re.sub(
+        r"[^a-z0-9#]+", " ", clean(text).casefold()
+    ).strip()
+
+    return {
+        "#": "#",
+        "name": "Name",
+        "university": "University",
+        "joining date": "Joining Date",
+        "join date": "Joining Date",
+        "joined": "Joining Date",
+        "got submission": "Got Submission",
+        "got sub": "Got Submission",
+    }.get(normalized, clean(text))
+
+
 def parse_date(text: str):
     text = clean(text)
 
@@ -56,6 +74,8 @@ def parse_date(text: str):
 
     formats = (
         "%d-%b-%Y",
+        "%d %b %Y",
+        "%d %B %Y",
         "%Y-%m-%d",
         "%d-%m-%Y",
         "%d/%m/%Y",
@@ -711,7 +731,7 @@ def _parse_applicant_page(html: str):
 
     for table in soup.find_all("table"):
         headers_found = [
-            clean(th.get_text(" ", strip=True))
+            canonical_header(th.get_text(" ", strip=True))
             for th in table.find_all("th")
         ]
 
