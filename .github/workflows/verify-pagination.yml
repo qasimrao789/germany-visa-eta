@@ -1,0 +1,59 @@
+name: Verify paginated VisaTracker data
+
+on:
+  push:
+    branches:
+      - fix/paginated-visa-data
+  pull_request:
+    paths:
+      - refresh_data.py
+      - tests/**
+      - .github/workflows/verify-pagination.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install requirements
+        run: pip install -r requirements.txt
+      - name: Run offline unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Generate complete dataset from live website (no deployment)
+        run: |
+          python refresh_data.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("data/tracker.json").read_text("utf-8"))
+          total = payload["total_applicants"]
+          waiting = payload["total_reported_waiting"]
+          submitted = payload["total_with_submission"]
+
+          if not (total > 0 and waiting + submitted == total):
+              raise AssertionError(
+                  "Inconsistent applicant aggregation: "
+                  f"total={total}, waiting={waiting}, submitted={submitted}"
+              )
+
+          if payload["historical_submission_count"] != 981:
+              raise AssertionError("Historical V3 source totals changed unexpectedly")
+
+          print("LIVE_PUBLIC_DATASET_VALIDATED")
+          print("Applicants:", total)
+          print("Waiting:", waiting)
+          print("Submitted:", submitted)
+          print("Long-term processing speed:",
+                payload["calculated_long_term_speed"])
+          print("Historical V3 model preserved.")
+          print("No website was deployed; no notifications were sent.")
+          PY
