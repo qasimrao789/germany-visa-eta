@@ -3,6 +3,7 @@ name: Verify paginated VisaTracker data
 on:
   push:
     branches:
+      - fix/website-header-aliases
       - fix/paginated-visa-data
   pull_request:
     paths:
