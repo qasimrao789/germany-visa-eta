@@ -655,231 +655,255 @@ def load_historical_data():
 
 
 # ============================================================
-# LIVE VISATRACKER
+# LIVE VISATRACKER (ALL PAGINATED APPLICANT PAGES)
 # ============================================================
 
-def fetch_applicants():
-
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 "
-            "AppleWebKit/537.36 "
-            "Chrome/126 Safari/537.36 "
-            "CommunityVisaETA/3.0"
-        ),
-
-        "Cache-Control":
-            "no-cache",
-
-        "Pragma":
-            "no-cache",
-    }
+# Match the row-range metadata rendered by the current website.
+# It supports the site's typographic dash as well as a normal hyphen.
+_PAGE_RANGE_RE = re.compile(
+    r"\bShowing\s+([\d,]+)\s*[-–—]\s*([\d,]+)\s+of\s+([\d,]+)\b",
+    re.IGNORECASE,
+)
+_TOTAL_APPLICANTS_RE = re.compile(
+    r"\b([\d,]+)\s+applicants\b",
+    re.IGNORECASE,
+)
 
 
-    response = requests.get(
-        TRACKER_URL,
-        headers=headers,
-        timeout=30,
+def _page_url(page: int) -> str:
+    """Select an explicit page without losing the consulate query parameter."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+    parts = urlsplit(TRACKER_URL)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query["page"] = str(page)
+
+    return urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
     )
 
 
-    response.raise_for_status()
+def _parse_applicant_page(html: str):
+    """
+    Parse one page into (row-number, anonymized applicant data) pairs.
 
+    The numeric row identifiers are used only to detect missing or repeated
+    applicants. The public calculator continues to receive only anonymous
+    joining and submission dates, exactly as before.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    page_text = soup.get_text(" ", strip=True)
 
-    soup = BeautifulSoup(
-        response.text,
-        "html.parser",
+    range_match = _PAGE_RANGE_RE.search(page_text)
+    page_range = (
+        tuple(int(value.replace(",", "")) for value in range_match.groups())
+        if range_match else None
     )
 
+    total_match = _TOTAL_APPLICANTS_RE.search(page_text)
+    reported_total = (
+        int(total_match.group(1).replace(",", ""))
+        if total_match else None
+    )
 
     target_table = None
-
     header_names = []
 
-
-    for table in soup.find_all(
-        "table"
-    ):
-
+    for table in soup.find_all("table"):
         headers_found = [
-            clean(
-                th.get_text(
-                    " ",
-                    strip=True,
-                )
-            )
-
-            for th
-            in table.find_all(
-                "th"
-            )
+            clean(th.get_text(" ", strip=True))
+            for th in table.find_all("th")
         ]
 
-
         if (
-            "Joining Date"
-            in headers_found
-
-            and
-
-            "Got Submission"
-            in headers_found
+            "Joining Date" in headers_found
+            and "Got Submission" in headers_found
         ):
-
             target_table = table
-
             header_names = headers_found
-
             break
 
-
     if target_table is None:
-
         raise RuntimeError(
-            "Could not find the "
-            "VisaTracker applicant table."
+            "Could not find the VisaTracker applicant table."
         )
 
-
-    index = {
-        name: i
-
-        for i, name
-        in enumerate(
-            header_names
-        )
-    }
-
-
-    required = [
-        "#",
-        "Joining Date",
-        "Got Submission",
-    ]
-
-
-    missing = [
-        column
-
-        for column
-        in required
-
-        if column
-        not in index
-    ]
-
+    index = {name: i for i, name in enumerate(header_names)}
+    required = ["#", "Joining Date", "Got Submission"]
+    missing = [name for name in required if name not in index]
 
     if missing:
+        raise RuntimeError(f"Missing tracker columns: {missing}")
 
-        raise RuntimeError(
-            f"Missing tracker columns: {missing}"
-        )
+    maximum_index = max(index[name] for name in required)
+    numbered_applicants = []
 
-
-    max_required_index = max(
-        index[
-            column
-        ]
-
-        for column
-        in required
-    )
-
-
-    applicants = []
-
-
-    for row in target_table.find_all(
-        "tr"
-    ):
-
-        cells_raw = row.find_all(
-            "td"
-        )
-
+    for row in target_table.find_all("tr"):
+        cells_raw = row.find_all("td")
 
         if not cells_raw:
-
             continue
-
 
         cells = [
-            clean(
-                cell.get_text(
-                    " ",
-                    strip=True,
-                )
+            clean(cell.get_text(" ", strip=True))
+            for cell in cells_raw
+        ]
+
+        if len(cells) <= index["#"]:
+            continue
+
+        row_text = cells[index["#"]]
+
+        # Skip date separators and other non-applicant rows.
+        if not row_text.isdigit():
+            continue
+
+        if len(cells) <= maximum_index:
+            raise RuntimeError(
+                f"Applicant row #{row_text} has missing columns."
             )
 
-            for cell
-            in cells_raw
-        ]
-
-
-        if (
-            len(cells)
-            <=
-            max_required_index
-        ):
-
-            continue
-
-
-        row_number = cells[
-            index[
-                "#"
-            ]
-        ]
-
-
-        if not row_number.isdigit():
-
-            continue
-
-
-        joining_date = parse_date(
-            cells[
-                index[
-                    "Joining Date"
-                ]
-            ]
-        )
-
+        joining_date = parse_date(cells[index["Joining Date"]])
 
         if joining_date is None:
+            raise RuntimeError(
+                f"Applicant row #{row_text} has no Joining Date."
+            )
 
-            continue
+        submission_date = parse_date(cells[index["Got Submission"]])
 
-
-        submission_date = parse_date(
-            cells[
-                index[
-                    "Got Submission"
-                ]
-            ]
+        numbered_applicants.append(
+            (
+                int(row_text),
+                {
+                    "joining_date": joining_date,
+                    "submission_date": submission_date,
+                },
+            )
         )
 
+    if not numbered_applicants:
+        raise RuntimeError("No applicants were parsed from VisaTracker.")
 
-        applicants.append(
-            {
-                "joining_date":
-                    joining_date,
+    numbered_applicants.sort(key=lambda item: item[0])
+    return numbered_applicants, page_range, reported_total
 
-                "submission_date":
-                    submission_date,
-            }
+
+def fetch_applicants():
+    """
+    Retrieve and verify the COMPLETE Islamabad applicant list.
+
+    Always request page=1 explicitly. The bare site URL currently starts
+    on page 2 in some cases. Follow every subsequent page until the reported
+    total is reached; never assume 50 rows per page.
+
+    Fail before producing data/tracker.json or deploying GitHub Pages if
+    rows are missing, repeated, or the total changes during a scrape.
+    """
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 AppleWebKit/537.36 "
+            "Chrome/126 Safari/537.36 CommunityVisaETA/3.0"
+        ),
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
+
+    applicants = []
+    previous_end = 0
+    expected_total = None
+
+    # Fail closed if the site's pagination stops progressing.
+    for page in range(1, 1001):
+        response = requests.get(
+            _page_url(page),
+            headers=headers,
+            timeout=30,
+        )
+        response.raise_for_status()
+
+        records, page_range, reported_total = _parse_applicant_page(
+            response.text
         )
 
+        if page_range is None:
+            # Legacy one-table layout: accept only if the total is known
+            # and the entire numbered table is present on the first page.
+            if (
+                page != 1
+                or reported_total is None
+                or len(records) != reported_total
+            ):
+                raise RuntimeError(
+                    "Cannot verify the full applicant list without "
+                    "valid pagination or total-count metadata."
+                )
 
-    if not applicants:
+            if any(
+                row_number != expected
+                for expected, (row_number, _) in enumerate(records, 1)
+            ):
+                raise RuntimeError(
+                    "The original single-table layout has missing rows."
+                )
 
-        raise RuntimeError(
-            "No applicants were parsed "
-            "from VisaTracker."
+            print(f"Verified {len(records)} applicants on one page.")
+            return [applicant for _, applicant in records]
+
+        start, end, page_total = page_range
+
+        if (
+            start != previous_end + 1
+            or end < start
+            or end > page_total
+            or len(records) != end - start + 1
+            or any(
+                row_number != expected
+                for expected, (row_number, _) in enumerate(records, start)
+            )
+        ):
+            raise RuntimeError(
+                f"Page {page} contains missing, duplicated, or "
+                f"out-of-order applicants: reported rows {start}-{end}."
+            )
+
+        if expected_total is None:
+            expected_total = page_total
+        elif page_total != expected_total:
+            raise RuntimeError(
+                "Applicant total changed during pagination: "
+                f"{expected_total} to {page_total}."
+            )
+
+        if (
+            reported_total is not None
+            and reported_total != expected_total
+        ):
+            raise RuntimeError(
+                "Applicant total conflicts with page-range metadata."
+            )
+
+        applicants.extend(applicant for _, applicant in records)
+        previous_end = end
+
+        print(
+            f"Downloaded page {page}: rows "
+            f"{start}-{end} of {expected_total}."
         )
 
+        if previous_end == expected_total:
+            if len(applicants) != expected_total:
+                raise RuntimeError("Applicant-count verification failed.")
 
-    return applicants
+            print(
+                f"Verified all {len(applicants)} applicants "
+                f"across {page} pages."
+            )
+            return applicants
+
+    raise RuntimeError(
+        "Exceeded 1,000 pages without retrieving all applicants."
+    )
 
 
 # ============================================================
