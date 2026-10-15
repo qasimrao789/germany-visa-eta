@@ -46,6 +46,38 @@ def fake_requests(pages, visited):
 
 
 class PaginationTests(unittest.TestCase):
+    def test_shortened_headers_and_spaced_dates(self):
+        html = """
+        <html><body>
+        <p>1 applicants</p><p>Showing 1 – 1 of 1</p>
+        <table><tr>
+          <th>#</th><th>NAME</th><th>UNIVERSITY</th>
+          <th>JOINED</th><th>GOT SUB.</th><th>SUBMITTED</th>
+          <th>CORRECTION</th><th>APPOINTMENT</th><th>STAGE</th>
+        </tr>
+        <tr>
+          <td>1</td><td>Sample Person</td><td>Example University</td>
+          <td>24 Jan 2026</td><td>9 Oct 2026</td><td>10 Oct 2026</td>
+          <td></td><td></td><td>Submitted</td>
+        </tr></table></body></html>
+        """
+        rows, page_range, count = refresh_data._parse_applicant_page(html)
+        self.assertEqual(page_range, (1, 1, 1))
+        self.assertEqual(count, 1)
+        self.assertEqual(rows[0][1]["joining_date"].isoformat(), "2026-01-24")
+        self.assertEqual(rows[0][1]["submission_date"].isoformat(), "2026-10-09")
+        self.assertEqual(
+            refresh_data.canonical_header("Submitted"), "Submitted"
+        )
+
+    def test_original_header_still_supported(self):
+        self.assertEqual(
+            refresh_data.canonical_header("Joining Date"), "Joining Date"
+        )
+        self.assertEqual(
+            refresh_data.canonical_header("Got Submission"), "Got Submission"
+        )
+
     def test_multi_page_concatenates_anonymous_data(self):
         pages = {
             1: page_html([row(1), row(2)], 1, 2, 3),
